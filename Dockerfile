@@ -1,20 +1,24 @@
-# ÉTAPE 1: Utiliser une image de base légère et fiable (Nginx)
-# Nginx est un serveur web performant qui servira nos fichiers statiques.
-FROM nginx:alpine
+# Utiliser une image Ubuntu comme base
+FROM ubuntu:22.04
 
-# ÉTAPE 2: Définir l'auteur du Dockerfile (Optionnel mais bonne pratique)
-LABEL maintainer="Votre Nom ou Email"
+# Informations sur l'image
+LABEL maintainer="lezer652"
 
-# ÉTAPE 3: Copier les fichiers du site web vers le répertoire de publication de Nginx
-# Le chemin par défaut pour les fichiers HTML statiques dans Nginx est /usr/share/nginx/html
-# Le point '.' représente tous les fichiers et dossiers de votre contexte de build local (votre dossier MonSiteWeb)
-COPY . /usr/share/nginx/html
+# Installer Nginx et Git
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y nginx git
 
-# ÉTAPE 4: Exposer le port par défaut de Nginx (80)
-# C'est le port sur lequel le conteneur écoutera.
-EXPOSE 80
+# Supprimer les fichiers par défaut
+RUN rm -rf /var/www/html/*
 
-# ÉTAPE 5: Commande par défaut (Nginx démarrera automatiquement avec l'image de base)
-# La commande par défaut de l'image Nginx est déjà de démarrer le serveur en arrière-plan.
-# Si vous aviez besoin d'une configuration personnalisée, vous pourriez la mettre ici.
-CMD ["nginx", "-g", "daemon off;"]
+# Cloner ton dépôt GitHub directement dans le dossier web
+RUN git clone https://github.com/lezer652/portfolio.git /var/www/html/
+
+# Modifier la configuration de Nginx pour écouter sur le port 10000
+RUN sed -i 's/listen 80 default_server;/listen 10000 default_server;/g' /etc/nginx/sites-available/default && \
+    sed -i 's/listen \[::\]:80 default_server;/listen \[::\]:10000 default_server;/g' /etc/nginx/sites-available/default
+
+# Exposer le port HTTP 10000
+EXPOSE 10000
+
+# Démarrer Nginx
+ENTRYPOINT ["/usr/sbin/nginx", "-g", "daemon off;"]
